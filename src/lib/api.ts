@@ -2,7 +2,7 @@ import { useAuthStore } from '@/store/authStore'
 
 const BASE_URL = (import.meta.env['VITE_API_URL'] as string | undefined) ?? 'http://localhost:8080'
 
-interface ApiError {
+export interface ApiError {
   status: number
   message: string
 }
@@ -27,8 +27,23 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const err: ApiError = { status: res.status, message: body.message ?? res.statusText }
     throw err
   }
-  if (res.status === 204) return undefined as T
-  return res.json() as Promise<T>
+
+  // Some endpoints (commonly DELETE) return success with an empty body.
+  if (res.status === 204 || res.status === 205 || res.headers.get('content-length') === '0') {
+    return undefined as T
+  }
+
+  const contentType = res.headers.get('content-type')?.toLowerCase() ?? ''
+  if (!contentType.includes('application/json')) {
+    return undefined as T
+  }
+
+  const text = await res.text()
+  if (!text.trim()) {
+    return undefined as T
+  }
+
+  return JSON.parse(text) as T
 }
 
 export default request

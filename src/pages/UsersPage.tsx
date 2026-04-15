@@ -24,7 +24,7 @@ export default function UsersPage() {
 
   return (
     <main className="container py-8">
-      <h1 className="mb-6 text-2xl font-semibold">Users</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-black">Users</h1>
 
       {error && (
         <Alert variant="destructive" className="mb-4">

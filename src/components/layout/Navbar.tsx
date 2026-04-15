@@ -29,6 +29,12 @@ export default function Navbar() {
             Foods
           </Link>
           <Link
+            to="/cart"
+            className={`text-sm font-medium transition-colors hover:text-primary ${pathname === '/cart' || pathname.startsWith('/orders/') ? 'text-primary' : 'text-muted-foreground'}`}
+          >
+            Cart
+          </Link>
+          <Link
             to="/users"
             className={`text-sm font-medium transition-colors hover:text-primary ${pathname === '/users' ? 'text-primary' : 'text-muted-foreground'}`}
           >

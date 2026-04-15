@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { getFoods, createFood, updateFood, deleteFood, type Food, type FoodPayload } from '@/api/foods'
+import { useNavigate } from 'react-router-dom'
+import { getFoods, createFood, updateFood, deleteFood, type Food, type FoodPayload } from '@/api/foodApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +21,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useCart } from '@/context/CartContext'
+import { useAuthStore } from '@/store/authStore'
+import type { ApiError } from '@/lib/api'
+import { ShoppingCart } from 'lucide-react'
 
 interface FoodForm {
   name: string
@@ -34,6 +39,9 @@ function foodToForm(f: Food): FoodForm {
 }
 
 export default function FoodsPage() {
+  const navigate = useNavigate()
+  const logout = useAuthStore((s) => s.logout)
+  const { items, addFood } = useCart()
   const [foods, setFoods] = useState<Food[]>([])
   const [pageError, setPageError] = useState('')
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | null>(null)
@@ -44,13 +52,29 @@ export default function FoodsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Food | null>(null)
   const [deleting, setDeleting] = useState(false)
 
+  function handleApiError(err: unknown, fallback: string): string {
+    const apiErr = err as ApiError
+    if (apiErr.status === 401) {
+      logout()
+      navigate('/login', { replace: true })
+      return 'Session expired. Please log in again.'
+    }
+    if (apiErr.status === 404) {
+      return 'Foods not found.'
+    }
+    if (apiErr.status === 500) {
+      return 'Server error. Please try again later.'
+    }
+    return apiErr.message ?? fallback
+  }
+
   async function loadFoods() {
     try {
       setPageError('')
       const data = await getFoods()
       setFoods(data)
-    } catch {
-      setPageError('Failed to load foods.')
+    } catch (err: unknown) {
+      setPageError(handleApiError(err, 'Failed to load foods.'))
     }
   }
 
@@ -101,8 +125,7 @@ export default function FoodsPage() {
       closeDialog()
       await loadFoods()
     } catch (err: unknown) {
-      const apiErr = err as { message?: string }
-      setFormError(apiErr.message ?? 'Failed to save food.')
+      setFormError(handleApiError(err, 'Failed to save food.'))
     } finally {
       setSaving(false)
     }
@@ -116,8 +139,7 @@ export default function FoodsPage() {
       setDeleteTarget(null)
       await loadFoods()
     } catch (err: unknown) {
-      const apiErr = err as { message?: string }
-      setPageError(apiErr.message ?? 'Failed to delete food.')
+      setPageError(handleApiError(err, 'Failed to delete food.'))
       setDeleteTarget(null)
     } finally {
       setDeleting(false)
@@ -127,8 +149,8 @@ export default function FoodsPage() {
   return (
     <main className="container py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Foods</h1>
-        <Button onClick={openCreate}>Add Food</Button>
+        <h1 className="text-2xl font-semibold text-black">Foods</h1>
+        <Button  onClick={openCreate}>Add Food</Button>
       </div>
 
       {pageError && (
@@ -166,6 +188,15 @@ export default function FoodsPage() {
                     <div className="flex gap-2 justify-end">
                       <Button variant="outline" size="sm" onClick={() => openEdit(food)}>
                         Edit
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => addFood(food)}
+                        disabled={items.some((item) => item.id === food.id)}
+                      >
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        {items.some((item) => item.id === food.id) ? 'Added' : 'Cart'}
                       </Button>
                       <Button
                         variant="destructive"
