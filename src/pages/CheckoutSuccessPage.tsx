@@ -132,7 +132,7 @@ export default function CheckoutSuccessPage() {
     let animationFrameId: number
     const canvas = canvasRef.current
     const indicator = indicatorRef.current
-    const gl = canvas.getContext('webgl')
+    const gl = canvas.getContext('webgl') as WebGLRenderingContext
     if (!gl) return
 
     // --- 1. Texture Generation (Dynamic Data) ---
@@ -289,7 +289,7 @@ export default function CheckoutSuccessPage() {
     const aUv = gl.getAttribLocation(program, "a_uv")
     const uProj = gl.getUniformLocation(program, "u_proj")
     const uView = gl.getUniformLocation(program, "u_view")
-    const uTex = gl.getUniformLocation(program, "u_tex")
+    gl.getUniformLocation(program, "u_tex")
 
     const tex = gl.createTexture()
     gl.bindTexture(gl.TEXTURE_2D, tex)
